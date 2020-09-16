@@ -1,9 +1,8 @@
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
-import google_auth_httplib2
+
 import pickle
 import datetime
-import datefinder
 from typing import Dict, Tuple, Sequence
 
 
