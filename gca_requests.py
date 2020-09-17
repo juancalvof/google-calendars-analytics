@@ -5,16 +5,20 @@ import pickle
 import datetime
 from typing import Dict, Tuple, Sequence
 
+import gca_app
+
+JSON_CLIENT_SECRET = "RESOURCES/client_secret_gca_testing_user.json"
+TOKEN = "RESOURCES/token_gca_testing_user.pkl"
 
 def create_save_credentials():
     scopes = ['https://www.googleapis.com/auth/calendar']
-    flow = InstalledAppFlow.from_client_secrets_file("RESOURCES/client_secret.json", scopes=scopes)
+    flow = InstalledAppFlow.from_client_secrets_file(JSON_CLIENT_SECRET, scopes=scopes)
     credentials = flow.run_console()
-    pickle.dump(credentials, open("token.pkl", "wb"))
+    pickle.dump(credentials, open(TOKEN, "wb"))
 
 
 def retrieve_service():
-    credentials = pickle.load(open("RESOURCES/token.pkl", "rb"))
+    credentials = pickle.load(open(TOKEN, "rb"))
     service = build("calendar", "v3", credentials=credentials)
     return service
 
@@ -72,3 +76,11 @@ def create_event(calendar_id, start_time_str, summary, duration=1, description=N
     }
     service = retrieve_service()
     return service.events().insert(calendarId=calendar_id, body=event).execute()
+
+
+if __name__ == "__main__":
+    # create_save_credentials()
+    list_calendar = retrieve_list_calendars()["items"]
+    df_total_events = gca_app.df_count_events(list_calendar, "BOTH")
+
+
