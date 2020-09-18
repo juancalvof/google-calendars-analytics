@@ -8,7 +8,7 @@ from PIL import Image
 
 
 # FUNCTIONS
-# @st.cache
+@st.cache
 def df_count_events(list_calendars, type_time_st="BOTH") -> pd.DataFrame:
     global filter_items
     dict_total_events = {}
@@ -119,7 +119,8 @@ if __name__ == "__main__":
     # 1 General Analysis
     st.write(f"## 1 GOOGLE CALENDARS GENERAL ANALYSIS (ALL CALENDARS)")
     st.sidebar.write(f"#### 1 GOOGLE CALENDARS GENERAL ANALYSIS (ALL CALENDARS)")
-    input_calendar_general_type = st.sidebar.selectbox('1 SELECT EVENTS TYPE:', ["HOURS EVENTS", "DAYS EVENTS", "BOTH"])
+    input_calendar_general_type = st.sidebar.selectbox('1_b SELECT EVENTS TYPE:', ["HOURS EVENTS", "DAYS EVENTS",
+                                                                                  "BOTH"])
 
     # Visualize df calendars
     st.write("### **1_a** General information of each calendar")

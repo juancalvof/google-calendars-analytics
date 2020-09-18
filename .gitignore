@@ -132,3 +132,4 @@ dmypy.json
 # Specific project
 RESOURCES/
 .idea/
+secret.py

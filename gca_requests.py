@@ -5,10 +5,11 @@ import pickle
 import datetime
 from typing import Dict, Tuple, Sequence
 
-import gca_app
+import datefinder
 
 JSON_CLIENT_SECRET = "RESOURCES/client_secret_gca_testing_user.json"
 TOKEN = "RESOURCES/token_gca_testing_user.pkl"
+
 
 def create_save_credentials():
     scopes = ['https://www.googleapis.com/auth/calendar']
@@ -17,9 +18,10 @@ def create_save_credentials():
     pickle.dump(credentials, open(TOKEN, "wb"))
 
 
+# TODO Test cache_discovery in True. Error message. Performance. MemoryCache()
 def retrieve_service():
     credentials = pickle.load(open(TOKEN, "rb"))
-    service = build("calendar", "v3", credentials=credentials)
+    service = build("calendar", "v3", credentials=credentials, cache_discovery=False)
     return service
 
 
@@ -29,7 +31,7 @@ def retrieve_list_calendars():
     list_calendars = service.calendarList().list().execute()
     return list_calendars
 
-
+# TODO How to show in app events with recurrence
 def retrieve_calendar_events_by_id(id_calendar) -> Dict:
     # Retrieve elements of calendar filtering status cancelled
     service = retrieve_service()
@@ -38,34 +40,43 @@ def retrieve_calendar_events_by_id(id_calendar) -> Dict:
     return result
 
 
-def create_event(calendar_id, start_time_str, summary, duration=1, description=None, location=None):
+def delete_events(id_calendar, events):
+    service = retrieve_service()
+    for event in events:
+        service.events().delete(calendarId=id_calendar, eventId=event["id"]).execute()
 
-    # #Option A
-    # matches = list(datefinder.find_dates(start_time_str))
-    # if len(matches):
-    #     start_time = matches[0]
-    #     end_time = start_time + datetime.timedelta(hours=duration)
 
-    # #Option B
-    # start_time = datetime(2020, 8, 12, 19, 30, 0)
-    # end_time = start_time + timedelta(hours=4)
-    # timezone = 'Europe/Madrid'
+def create_event(type_time, calendar_id, start_time_str, summary, duration=1, description=None, location=None,
+                 recurrence=None):
+    start_time = None
 
-    # Option C
-    end_time = start_time_str + datetime.timedelta(hours=duration)
+    matches = list(datefinder.find_dates(start_time_str))
+    if len(matches):
+        start_time = matches[0]
+
+    type_format = "%Y-%m-%dT%H:%M:%S"
+    if type_time == "date":
+        type_format = "%Y-%m-%d"
+
+    start_time_str_dict = start_time.strftime(type_format)
+    end_time = start_time + datetime.timedelta(hours=duration)
+    end_time_str_dict = end_time.strftime(type_format)
 
     event = {
         'summary': summary,
         'location': location,
         'description': description,
         'start': {
-            'dateTime': start_time_str.strftime("%Y-%m-%dT%H:%M:%S"),
+            type_time: start_time_str_dict,
             'timeZone': 'Europe/Madrid',
         },
         'end': {
-            'dateTime': end_time.strftime("%Y-%m-%dT%H:%M:%S"),
+            type_time: end_time_str_dict,
             'timeZone': 'Europe/Madrid',
         },
+        'recurrence': [
+            'RRULE:FREQ='+recurrence
+        ],
         'reminders': {
             'useDefault': False,
             'overrides': [
@@ -74,13 +85,8 @@ def create_event(calendar_id, start_time_str, summary, duration=1, description=N
             ],
         },
     }
+
     service = retrieve_service()
     return service.events().insert(calendarId=calendar_id, body=event).execute()
-
-
-if __name__ == "__main__":
-    # create_save_credentials()
-    list_calendar = retrieve_list_calendars()["items"]
-    df_total_events = gca_app.df_count_events(list_calendar, "BOTH")
 
 
