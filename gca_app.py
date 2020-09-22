@@ -5,6 +5,7 @@ import datetime
 import urllib.parse
 import pandas as pd
 from PIL import Image
+import plotly_graphs as pg
 
 
 # FUNCTIONS
@@ -48,6 +49,7 @@ def df_events_filter(events, df_events, type_time, format_time, type) -> pd.Data
     df['Week number of the year'] = df['start'].map(lambda x: x.strftime('%Y-%W'))
     return df.sort_values(by=['Week number of the year'])
 
+
 @st.cache
 def df_group_sum(df, type, input_calendar_name, dates) -> pd.DataFrame:
     df[input_calendar_name + " " + type] = df[type]
@@ -58,9 +60,9 @@ def df_group_sum(df, type, input_calendar_name, dates) -> pd.DataFrame:
     idx = [str(i.strftime('%Y-%W')) for i in idx]
     df_group = df_group.reindex(idx, fill_value=pd.Timedelta('0 days'))
     if type == "hours":
-        df_group[input_calendar_name + " " + type] = (df_group[input_calendar_name + " " + type].dt.seconds/3600)
+        df_group[input_calendar_name + " " + type] = (df_group[input_calendar_name + " " + type].dt.seconds / 3600)
     elif type == "days":
-        df_group [input_calendar_name + " " + type] = df_group [input_calendar_name + " " + type].dt.days
+        df_group[input_calendar_name + " " + type] = df_group[input_calendar_name + " " + type].dt.days
 
     return df_group
 
@@ -121,7 +123,7 @@ if __name__ == "__main__":
     st.write(f"## 1 GOOGLE CALENDARS GENERAL ANALYSIS (ALL CALENDARS)")
     st.sidebar.write(f"#### 1 GOOGLE CALENDARS GENERAL ANALYSIS (ALL CALENDARS)")
     input_calendar_general_type = st.sidebar.selectbox('1_b SELECT EVENTS TYPE:', ["HOURS EVENTS", "DAYS EVENTS",
-                                                                                  "BOTH"])
+                                                                                   "BOTH"])
 
     # Visualize df calendars
     st.write("### **1_a** General information of each calendar")
@@ -133,6 +135,7 @@ if __name__ == "__main__":
     df_total_events = df_count_events(list_calendar, input_calendar_general_type)
     st.dataframe(df_total_events)
     st.bar_chart(df_total_events, width=100, height=400, use_container_width=True)
+    st.plotly_chart(pg.test_bar_chart(), use_container_width=True)
 
     # 2 Specific analysis
     list_calendar_names = [x["summary"] for x in list_calendar]
@@ -159,8 +162,9 @@ if __name__ == "__main__":
         st.dataframe(df_events)
 
         input_calendar_id_number = urllib.parse.quote(input_calendar_id)
-        components.iframe(f"https://calendar.google.com/calendar/embed?src={input_calendar_id_number}&ctz=Europe%2FMadrid",
-                          width=1200, height=800, scrolling=True)
+        components.iframe(
+            f"https://calendar.google.com/calendar/embed?src={input_calendar_id_number}&ctz=Europe%2FMadrid",
+            width=1200, height=800, scrolling=True)
 
         input_calendar_specific_type = st.sidebar.selectbox('2_b SELECT EVENTS TYPE:', ["HOURS EVENTS", "DAYS EVENTS"],
                                                             key="spe_sb")
@@ -178,15 +182,16 @@ if __name__ == "__main__":
     st.write(f'## 3 GOOGLE CALENDAR COMPARATIVE  ANALYSIS (ALL CALENDARS)')
     st.sidebar.write(f'#### 3 GOOGLE CALENDAR COMPARATIVE  ANALYSIS (ALL CALENDARS)')
 
-    input_dates_analyze_comparative = st.sidebar.date_input("3 SELECT RANGE OF DATES TO ANALYZE", [datetime.date(2019, 1,
-                                                                                                                 1),
-                                                                                                   datetime.date.today()],
+    input_dates_analyze_comparative = st.sidebar.date_input("3 SELECT RANGE OF DATES TO ANALYZE",
+                                                            [datetime.date(2019, 1,
+                                                                           1),
+                                                             datetime.date.today()],
                                                             key="comp_di")
 
     input_list_calendars_selected = st.sidebar.multiselect('3 SELECT ANY NUMBER OF CALENDARS:', list_calendar_names)
 
     input_calendar_specific_type_comparative = st.sidebar.selectbox('3 SELECT EVENTS TYPE:', ["HOURS EVENTS",
-                                                                                                "DAYS EVENTS"],
+                                                                                              "DAYS EVENTS"],
                                                                     key="comp_sb")
 
     if input_calendar_specific_type_comparative == "HOURS EVENTS":
@@ -195,7 +200,7 @@ if __name__ == "__main__":
 
     elif input_calendar_specific_type_comparative == "DAYS EVENTS":
         comparative_analysis(input_list_calendars_selected, "date", "%Y-%m-%d", "days",
-                          input_dates_analyze_comparative)
+                             input_dates_analyze_comparative)
 
     st.sidebar.write('Notes: Events with status "cancelled" are omitted.')
     st.write(f"---")
