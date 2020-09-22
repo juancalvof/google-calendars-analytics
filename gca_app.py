@@ -40,31 +40,28 @@ def dict_events_filter(input_calendar_events, type_time, format_time):
 def df_events_filter(events, df_events, type_time, format_time, type) -> pd.DataFrame:
     input_calendar = dict_events_filter(events, type_time, format_time)
     df = pd.DataFrame(list(input_calendar.items()), columns=["id", type])
-    st.dataframe(df)
     df["start"] = df["id"].map(df_events.set_index('id')["start"])
     df["end"] = df["id"].map(df_events.set_index('id')["end"])
+    # df["recurrence"] = df["id"].map(df_events.set_index('id')["recurrence"])
     df["start"] = df["start"].apply(lambda x: datetime.datetime.strptime(x[type_time], format_time))
     df["end"] = df["end"].apply(lambda x: datetime.datetime.strptime(x[type_time], format_time))
-    df['month'] = df['start'].map(lambda x: x.strftime('%Y-%m'))
-    return df.sort_values(by=['month'])
-
+    df['Week number of the year'] = df['start'].map(lambda x: x.strftime('%Y-%W'))
+    return df.sort_values(by=['Week number of the year'])
 
 @st.cache
 def df_group_sum(df, type, input_calendar_name, dates) -> pd.DataFrame:
     df[input_calendar_name + " " + type] = df[type]
-    df_group = df.groupby("month")[input_calendar_name + " " + type].sum()
-    df_group = df_group.reset_index().set_index("month")
-    idx = pd.period_range(dates[0], dates[-1], freq="M").astype("str")
-
-    df_group = df_group.reindex(idx, fill_value=0)
-
-    if type == "hours":
-        df_group[input_calendar_name + " " + type] = df_group[[input_calendar_name + " " + type]] / 3600000000000
-    elif type == "days":
-        df_group[input_calendar_name + " " + type] = df_group[[input_calendar_name + " " + type]] / (3600000000000 * 24)
-
+    df_group = df.groupby("Week number of the year")[input_calendar_name + " " + type].sum()
+    df_group = df_group.reset_index().set_index("Week number of the year")
     # Streamlit doesnt take class 'pandas.core.indexes.period.PeriodIndex'
-    df_group.index = df_group.index.astype('str')
+    idx = pd.period_range(dates[0], dates[-1], freq="W")
+    idx = [str(i.strftime('%Y-%W')) for i in idx]
+    df_group = df_group.reindex(idx, fill_value=pd.Timedelta('0 days'))
+    if type == "hours":
+        df_group[input_calendar_name + " " + type] = (df_group[input_calendar_name + " " + type].dt.seconds/3600)
+    elif type == "days":
+        df_group [input_calendar_name + " " + type] = df_group [input_calendar_name + " " + type].dt.days
+
     return df_group
 
 
@@ -72,7 +69,7 @@ def specific_analysis(df_events, input_calendar_events, input_calendar_name, typ
     df = df_events_filter(input_calendar_events, df_events, type_time, format_time, type)
 
     st.write(
-        f'### **2_b_I TYPE HOURS:** List of events in "{input_calendar_name}" calendar, of type {type}, with month of '
+        f'### **2_b_I TYPE HOURS:** List of events in "{input_calendar_name}" calendar, of type {type}, with Week number of the year of '
         f'the event column ')
 
     if len(df.index) == 0:
@@ -81,7 +78,7 @@ def specific_analysis(df_events, input_calendar_events, input_calendar_name, typ
         st.dataframe(df)
 
     st.write(f'### **2_b_II TYPE HOURS:** Total amount of {type} in the events in "{input_calendar_name}" calendar for '
-             'each month ')
+             'each Week number of the year ')
 
     if len(df.index) == 0:
         st.write("No values in this type.")
@@ -96,14 +93,18 @@ def comparative_analysis(list_calendars_selected, type_time, format_time, type, 
     df_final = pd.DataFrame(index=idx)
     if len(list_calendars_selected) == 0:
         st.write("No calendar selected.")
+
     else:
         for calendar in list_calendars_selected:
             input_calendar_id = [x["id"] for x in list_calendar if x["summary"] == calendar][0]
             input_calendar_events = gl.retrieve_calendar_events_by_id(input_calendar_id)
-            df_events = pd.DataFrame(input_calendar_events)
-            df = df_events_filter(input_calendar_events, df_events, type_time, format_time, type)
-            df_group = df_group_sum(df, type, calendar, dates)
-            df_final = df_final.join(df_group)
+            if len(input_calendar_events) == 0:
+                st.write(f"No values in {calendar} calendar.")
+            else:
+                df_events = pd.DataFrame(input_calendar_events)
+                df = df_events_filter(input_calendar_events, df_events, type_time, format_time, type)
+                df_group = df_group_sum(df, type, calendar, dates)
+                df_final = df_final.join(df_group)
 
         st.dataframe(df_final)
         st.line_chart(df_final)
@@ -150,24 +151,27 @@ if __name__ == "__main__":
 
     # Visualize events of selected calendar
     input_calendar_events = gl.retrieve_calendar_events_by_id(input_calendar_id)
-    df_events = pd.DataFrame(input_calendar_events)
-    st.write(f'### **2_a** List of events in "{input_calendar_name}" calendar')
-    st.dataframe(df_events)
+    if len(input_calendar_events) == 0:
+        st.write("No values in this calendar.")
+    else:
+        df_events = pd.DataFrame(input_calendar_events)
+        st.write(f'### **2_a** List of events in "{input_calendar_name}" calendar')
+        st.dataframe(df_events)
 
-    input_calendar_id_number = urllib.parse.quote(input_calendar_id)
-    components.iframe(f"https://calendar.google.com/calendar/embed?src={input_calendar_id_number}&ctz=Europe%2FMadrid",
-                      width=1200, height=800, scrolling=True)
+        input_calendar_id_number = urllib.parse.quote(input_calendar_id)
+        components.iframe(f"https://calendar.google.com/calendar/embed?src={input_calendar_id_number}&ctz=Europe%2FMadrid",
+                          width=1200, height=800, scrolling=True)
 
-    input_calendar_specific_type = st.sidebar.selectbox('2_b SELECT EVENTS TYPE:', ["HOURS EVENTS", "DAYS EVENTS"],
-                                                        key="spe_sb")
+        input_calendar_specific_type = st.sidebar.selectbox('2_b SELECT EVENTS TYPE:', ["HOURS EVENTS", "DAYS EVENTS"],
+                                                            key="spe_sb")
 
-    if input_calendar_specific_type == "HOURS EVENTS":
-        specific_analysis(df_events, input_calendar_events, input_calendar_name, "dateTime", "%Y-%m-%dT%H:%M:%S%z",
-                          "hours", input_dates_analyze)
+        if input_calendar_specific_type == "HOURS EVENTS":
+            specific_analysis(df_events, input_calendar_events, input_calendar_name, "dateTime", "%Y-%m-%dT%H:%M:%S%z",
+                              "hours", input_dates_analyze)
 
-    elif input_calendar_specific_type == "DAYS EVENTS":
-        specific_analysis(df_events, input_calendar_events, input_calendar_name, "date", "%Y-%m-%d",
-                          "days", input_dates_analyze)
+        elif input_calendar_specific_type == "DAYS EVENTS":
+            specific_analysis(df_events, input_calendar_events, input_calendar_name, "date", "%Y-%m-%d",
+                              "days", input_dates_analyze)
     st.write(f"---")
 
     # 3 Comparative analysis

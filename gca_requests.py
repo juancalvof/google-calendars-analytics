@@ -1,6 +1,7 @@
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 
+import streamlit as st
 import pickle
 import datetime
 from typing import Dict, Tuple, Sequence
@@ -31,11 +32,19 @@ def retrieve_list_calendars():
     list_calendars = service.calendarList().list().execute()
     return list_calendars
 
-# TODO How to show in app events with recurrence
+
 def retrieve_calendar_events_by_id(id_calendar) -> Dict:
     # Retrieve elements of calendar filtering status cancelled
     service = retrieve_service()
-    result = service.events().list(calendarId=id_calendar, timeZone="Europe/Madrid").execute()["items"]
+    page_token = None
+    result = []
+    while True:
+        events = service.events().list(calendarId=id_calendar, pageToken=page_token, singleEvents=True,
+                                       orderBy="startTime").execute()
+        result += events["items"]
+        page_token = events.get('nextPageToken')
+        if not page_token:
+            break
     result = [x for x in result if x["status"] != "cancelled"]
     return result
 
@@ -75,7 +84,7 @@ def create_event(type_time, calendar_id, start_time_str, summary, duration=1, de
             'timeZone': 'Europe/Madrid',
         },
         'recurrence': [
-            'RRULE:FREQ='+recurrence
+            'RRULE:FREQ=' + recurrence
         ],
         'reminders': {
             'useDefault': False,
@@ -88,5 +97,3 @@ def create_event(type_time, calendar_id, start_time_str, summary, duration=1, de
 
     service = retrieve_service()
     return service.events().insert(calendarId=calendar_id, body=event).execute()
-
-
