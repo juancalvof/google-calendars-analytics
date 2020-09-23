@@ -6,6 +6,7 @@ import urllib.parse
 import pandas as pd
 from PIL import Image
 import plotly_graphs as pg
+import secret
 
 
 # FUNCTIONS
@@ -69,6 +70,7 @@ def df_group_sum_weeks(df, type, input_calendar_name, dates) -> pd.DataFrame:
 
     return df_group
 
+
 def specific_analysis(df_events, input_calendar_events, input_calendar_name, type_time, format_time, type, dates):
     df = df_events_filter(input_calendar_events, df_events, type_time, format_time, type)
 
@@ -89,7 +91,7 @@ def specific_analysis(df_events, input_calendar_events, input_calendar_name, typ
     else:
         df_group = df_group_sum_weeks(df, type, input_calendar_name, dates)
         st.dataframe(df_group)
-        st.plotly_chart(pg.line_chart(df_group, df_group.index, df_group.columns[0]), use_container_width=True,
+        st.plotly_chart(pg.line_chart(df_group, df_group.index, df_group.columns[0], type), use_container_width=True,
                         config=pg.UNBRAND_CONFIG)
 
 
@@ -104,19 +106,33 @@ def comparative_analysis(list_calendars_selected, type_time, format_time, type, 
         for calendar in list_calendars_selected:
             input_calendar_id = [x["id"] for x in list_calendar if x["summary"] == calendar][0]
             input_calendar_events = gl.retrieve_calendar_events_by_id(input_calendar_id)
+
             if len(input_calendar_events) == 0:
                 st.write(f"No values in {calendar} calendar.")
             else:
                 df_events = pd.DataFrame(input_calendar_events)
+
                 df = df_events_filter(input_calendar_events, df_events, type_time, format_time, type)
-                df_group = df_group_sum_weeks(df, type, calendar, dates)
-                df_final = df_final.join(df_group)
+
+                if len(df.index) != 0:
+                    df_group = df_group_sum_weeks(df, type, calendar, dates)
+                    df_final = df_final.join(df_group)
+
+                else:
+                    st.write(f"No {type} events  in {calendar} calendar.")
 
         st.dataframe(df_final)
-        st.plotly_chart(pg.line_chart_multiple(df_final),
+        st.plotly_chart(pg.line_chart_multiple(df_final, type),
                         use_container_width=True,
                         config=pg.UNBRAND_CONFIG)
 
+
+def filter_by_dates(dict, type, dates):
+    key = "dateTime"
+    if type == "DAYS EVENTS":
+        key = "date"
+    result = [x for x in dict if x["start"][key] >= dates[0] & x['start'][key] <= dates[-1]]
+    return result
 
 
 if __name__ == "__main__":
@@ -131,7 +147,6 @@ if __name__ == "__main__":
     st.sidebar.write(f"#### 1 GOOGLE CALENDARS GENERAL ANALYSIS (ALL CALENDARS)")
     input_calendar_general_type = st.sidebar.selectbox('1_b SELECT EVENTS TYPE:', ["HOURS EVENTS", "DAYS EVENTS",
                                                                                    "BOTH"])
-
     # Visualize df calendars
     st.write("### **1_a** General information of each calendar")
     list_calendar = gl.retrieve_list_calendars()["items"]
@@ -151,30 +166,36 @@ if __name__ == "__main__":
     st.write(f'## 2 GOOGLE CALENDAR SPECIFIC ANALYSIS (1 CALENDAR)')
     st.sidebar.write(f'#### 2 GOOGLE CALENDAR SPECIFIC ANALYSIS (1 CALENDAR)')
 
-    input_dates_analyze = st.sidebar.date_input("2 SELECT RANGE OF DATES TO ANALYZE", [datetime.date(2019, 1, 1),
-                                                                                       datetime.date.today()],
-                                                key="spe_di")
+
 
     input_calendar_name = st.sidebar.selectbox('2 SELECT CALENDAR:', list_calendar_names)
 
     input_calendar_id = [x["id"] for x in list_calendar if x["summary"] == input_calendar_name][0]
+
+    input_dates_analyze = st.sidebar.date_input("2_b SELECT RANGE OF DATES TO ANALYZE", [datetime.date(2019, 1, 1),
+                                                                                       datetime.date.today()],
+                                                key="spe_di")
+
+    input_calendar_specific_type = st.sidebar.selectbox('2_b SELECT EVENTS TYPE:', ["HOURS EVENTS", "DAYS EVENTS"],
+                                                        key="spe_sb")
 
     # Visualize events of selected calendar
     input_calendar_events = gl.retrieve_calendar_events_by_id(input_calendar_id)
     if len(input_calendar_events) == 0:
         st.write("No values in this calendar.")
     else:
+        #TODO Filter before dataframe
+        # df_events = filter_by_dates(input_calendar_events, input_dates_analyze, input_calendar_specific_type)
         df_events = pd.DataFrame(input_calendar_events)
-        st.write(f'### **2_a** List of events in "{input_calendar_name}" calendar')
+
+        st.write(f'### **2_a_I** List of events in "{input_calendar_name}" calendar')
         st.dataframe(df_events)
 
+        st.write(f'### **2_a_II** "{input_calendar_name}" calendar visualization')
         input_calendar_id_number = urllib.parse.quote(input_calendar_id)
         components.iframe(
             f"https://calendar.google.com/calendar/embed?src={input_calendar_id_number}&ctz=Europe%2FMadrid",
             width=1200, height=800, scrolling=True)
-
-        input_calendar_specific_type = st.sidebar.selectbox('2_b SELECT EVENTS TYPE:', ["HOURS EVENTS", "DAYS EVENTS"],
-                                                            key="spe_sb")
 
         if input_calendar_specific_type == "HOURS EVENTS":
             specific_analysis(df_events, input_calendar_events, input_calendar_name, "dateTime", "%Y-%m-%dT%H:%M:%S%z",
