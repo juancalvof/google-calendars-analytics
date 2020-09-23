@@ -6,8 +6,10 @@ import urllib.parse
 import pandas as pd
 from PIL import Image
 import plotly_graphs as pg
-import secret
 
+# VARIABLES
+list_calendar = gl.retrieve_list_calendars()["items"]
+list_calendar_names = [x["summary"] for x in list_calendar]
 
 # FUNCTIONS
 @st.cache
