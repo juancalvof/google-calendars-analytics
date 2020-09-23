@@ -7,7 +7,7 @@ import gca_main_functions as mf
 
 def gca_page_1():
     # Config page
-    st.title("GOOGLE CALENDARS ANALYTICS")
+    st.title("GOOGLE CALENDARS ANALYTICS PAGE 1")
 
     # 1 General Analysis
     st.write(f"## 1 GOOGLE CALENDARS GENERAL ANALYSIS (ALL CALENDARS)")

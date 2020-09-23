@@ -8,6 +8,7 @@ import gca_main_functions as mf
 
 
 def gca_page_2():
+    st.title("GOOGLE CALENDARS ANALYTICS PAGE 2")
     st.write(f'## 2 GOOGLE CALENDAR SPECIFIC ANALYSIS (1 CALENDAR)')
     st.sidebar.write(f'#### 2 GOOGLE CALENDAR SPECIFIC ANALYSIS (1 CALENDAR)')
 

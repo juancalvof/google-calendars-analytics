@@ -1,5 +1,7 @@
 import plotly.express as px
 import plotly.graph_objects as go
+import gca_main_functions as mf
+import streamlit as st
 
 UNBRAND_CONFIG = dict(modeBarButtonsToRemove=['sendDataToCloud', 'toggleSpikelines', 'hoverCompareCartesian'],
                       displaylogo=False, showLink=False,displayModeBar=False, showTips=False)
@@ -11,7 +13,9 @@ def test_line_chart():
     return fig
 
 
-def line_chart(df, x, y, type):
+def line_chart(df, x, y, type, input_calendar_name):
+
+    color = [x["backgroundColor"] for x in mf.list_calendar if input_calendar_name == x["summary"]][0]
     fig = px.line(df, x=x, y=y, template="simple_white")
     fig.update_xaxes(
         tickangle=270,
@@ -22,7 +26,7 @@ def line_chart(df, x, y, type):
         spikethickness=1,
         fixedrange=True)
     fig.update_yaxes(showspikes=True, fixedrange=True, spikethickness=1)
-    fig.update_traces(marker_color='rgb(0,255,194)', line_color='rgb(0,255,194)')
+    fig.update_traces(marker_color=color, line_color=color)
 
     fig.update_layout(xaxis_title='YEAR AND WEEK NUMBER OF THE YEAR',
                       yaxis_title=type.upper())
@@ -34,7 +38,8 @@ def line_chart(df, x, y, type):
 def line_chart_multiple(df, type):
     fig = go.Figure()
     for column in df.columns:
-        fig.add_trace(go.Scatter(x=df.index, y=df[column], name=column))
+        color = [x["backgroundColor"] for x in mf.list_calendar if column == x["summary"]][0]
+        fig.add_trace(go.Scatter(x=df.index, y=df[column], name=column, line=dict(color=color)))
     fig.update_xaxes(
         tickangle=270,
         dtick="M1",

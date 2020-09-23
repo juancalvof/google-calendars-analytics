@@ -4,7 +4,7 @@ import gca_main_functions as mf
 
 
 def gca_page_3():
-    # 3 Comparative analysis
+    st.title("GOOGLE CALENDARS ANALYTICS PAGE 3")
     st.write(f'## 3 GOOGLE CALENDAR COMPARATIVE  ANALYSIS (ALL CALENDARS)')
     st.sidebar.write(f'#### 3 GOOGLE CALENDAR COMPARATIVE  ANALYSIS (ALL CALENDARS)')
 
