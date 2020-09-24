@@ -1,10 +1,7 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import gca_requests as gl
 import datetime
-import urllib.parse
 import pandas as pd
-from PIL import Image
 import plotly_graphs as pg
 
 # VARIABLES

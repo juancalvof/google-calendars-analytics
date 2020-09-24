@@ -22,3 +22,4 @@ st.sidebar.write(f"---")
 # Render pages
 with st.spinner(f"LOAADING {selected_demo} ..."):
     pages[selected_demo]()
+
