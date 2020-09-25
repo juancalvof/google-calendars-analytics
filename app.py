@@ -9,7 +9,7 @@ st.beta_set_page_config("GOOGLE CALENDARS ANALYTICS", ":calendar:", "wide", "aut
 pages = {
     "PAGE 1: GENERAL ANALYSIS (ALL CALENDARS)": gca_page_1,
     "PAGE 2: SPECIFIC ANALYSIS (1 CALENDAR)": gca_page_2,
-    "PAGE 3: GENERAL ANALYSIS (ALL CALENDARS)": gca_page_3
+    "PAGE 3: COMPARATIVE ANALYSIS (ALL CALENDARS)": gca_page_3
 }
 
 # Sidebar
