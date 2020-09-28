@@ -133,3 +133,5 @@ dmypy.json
 RESOURCES/
 .idea/
 secret.py
+app.yaml
+Dockerfile
